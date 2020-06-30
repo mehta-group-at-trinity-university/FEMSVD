@@ -1,9 +1,11 @@
+
       
-      subroutine sumpairwisepot(r12, r13, r14, r23, r24, r34, dscale, potvalue,rvec,vvec) 
+      subroutine sumpairwisepot(r12, r13, r14, r23, r24, r34, dscale, potvalue,rvec,vvec,run) 
       
 !     returns the value of the sum of pair-wise interactions 
       
       implicit none
+      integer run
       double precision c0, cutoff, potvalue, r12, r13, r14, r23, r24, r34,dd,r0,a,L
       double precision v1,v2,v3,v4,v5,v6
       double precision dscale
@@ -76,12 +78,12 @@
 
 
 !cc new potential ccc
-      call singlePot(0,vvec,r12,v1)
-      call singlePot(1,vvec,r13,v2)
-      call singlePot(0,vvec,r34,v3)
-      call singlePot(1,vvec,r23,v4)
-      call singlePot(1,vvec,r24,v5)
-      call singlePot(1,vvec,r14,v6)
+      call singlePot(0,vvec,r12,v1,run)
+      call singlePot(1,vvec,r13,v2,run)
+      call singlePot(0,vvec,r34,v3,run)
+      call singlePot(1,vvec,r23,v4,run)
+      call singlePot(1,vvec,r24,v5,run)
+      call singlePot(1,vvec,r14,v6,run)
       potvalue = v1+v2+v3+v4+v5+v6
 
 !      potvalue=4.0d0*4000.0d0*((4.0d0/r12)**12.0d0-(4.0d0/r12)**6.0d0+
@@ -96,9 +98,9 @@
       return
       end 
 
-      subroutine singlePot(rflag,vvec,R,potval)
-      integer rflag
-      double precision R, potval
+      subroutine singlePot(rflag,vvec,R,potval,run)
+      integer rflag,run
+      double precision R, potval, depth
       double precision A,B
       double precision a0,littleb,Rm,C6,C8,C10,Aex,gamma,beta
       double precision rvec(161),vvec(161)
@@ -160,7 +162,13 @@
 
 !      if (rflag.eq.1d0) then
         !    potval=-20.0d0*(cosh(abs(R)/0.5d0))**(-2.0d0)
-         potval = 100.0d0*(((1-exp(-1.0d0/1.0d0*(abs(R)-1.0d0)))**2.0d0)-1.0d0)  
+        !if (run==1) depth=50d0
+        !if (run==2) depth=50d0
+        !if (run==3) depth=100d0
+        !if (run==4) depth=100d0
+        !if (run==5) depth=300d0
+        depth=5d0
+         potval = depth*(((1-exp(-1.0d0/1.0d0*(abs(R)-1.0d0)))**2.0d0)-1.0d0)  
 !      else
 !          if (R.le.0.01d0) then
 !              potval=10000.d0

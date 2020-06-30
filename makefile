@@ -1,5 +1,7 @@
 4BodySVD.x:	4BodySVD.f90 adiabaticSolver.f90 Bsplines.f90 FourBodyPOT.f90 matrix_stuff.f90
-	ifort 4BodySVD.f90 adiabaticSolver.f90 Bsplines.f90 FourBodyPOT.f90 matrix_stuff.f90 -mkl -L/opt/ARPACK -larpack_Intel -parallel -qopt-report=3
+	ifort -O4 4BodySVD.f90 adiabaticSolver.f90 Bsplines.f90 FourBodyPOT.f90 matrix_stuff.f90 -mkl -L/opt/ARPACK -larpack_Intel -parallel -no-wrap-margin 
+#-debug full -traceback -check bounds
+#-qopt-report=3 
 #-debug full -traceback -check bounds
 
 

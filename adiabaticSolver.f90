@@ -1,9 +1,9 @@
       Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints,Shift,Order,Left,Right,Top,Bottom,alpha,m1,&
                       xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,RSteps,RDerivDelt,RFirst,RLast,dscale,&
-                      R,Uad,Psi,eDim,psiDim,S,sDim)
+                      R,Uad,Psi,eDim,psiDim,S,sDim,run)
       implicit none
 
-      integer LegPoints,xNumPoints,yNumPoints
+      integer LegPoints,xNumPoints,yNumPoints,run
       integer NumStates,PsiFlag,Order,Left,Right,Bottom,Top
       integer RSteps,CouplingFlag,CalcNewBasisFunc
       double precision alpha,m,Shift,dscale
@@ -34,14 +34,24 @@
       double precision, allocatable :: vy(:,:,:),vyy(:,:,:)
       double precision, allocatable :: H(:,:),Vmid(:,:,:),Vexp(:,:,:)
       double precision, allocatable :: mPsi(:,:),lPsi(:,:),rPsi(:,:)
-      double precision :: Psi(RSteps,psiDim,eDim),Uad(RSteps,eDim,2),Energies(eDim,2),S(sDim,psiDim)
-      double precision, allocatable :: P(:,:),Q(:,:),dP(:,:)
+      double precision :: Psi(RSteps,psiDim,eDim),Uad(RSteps,eDim,2),S(sDim,psiDim)
+      double precision, allocatable ::P(:,:),Q(:,:),dP(:,:),Energies(:,:)
       double precision r0
       common/MassInfo/mu12,r0diatom,dDiatom
 
       character*64 LegendreFile
-        !open(unit=100,file="adiabaticEnergies-10x10x10.dat")
-        open(unit=200,file="adiabaticPhi-10x10x10.dat")
+      character*64 filename
+        if (run==1) filename="adiabaticEnergies-100x100x100x50x5-HHHHEven.dat"
+        if (run==2) filename="adiabaticEnergies-100x100x100x50x5-HHHHOdd.dat"
+        if (run==3) filename="adiabaticEnergies-100x90x90x200x50-m12Even.dat"
+        if (run==4) filename="adiabaticEnergies-150x80x80x200x100-m12Even.dat"
+        if (run==5) filename="adiabaticEnergies-200x80x80x200x250-m12.dat"
+        if (run==6) filename="adiabaticEnergies-200x80x80x200x300-m12.dat"
+        open(unit=100,file=filename)
+        !open(unit=200,file="adiabaticPhi-200x60x60x100x100-m12.dat")
+        !open(unit=101,file="adiabaticP.dat")
+        !open(unit=102,file="adiabaticQ.dat")
+        !open(unit=103,file="adiabaticdP.dat")
 !     -- Initialization of Jeff Stephen's h3plus potential routine:
 !      call label
 !     -- See R. Jaquet, W. Cencek, W. Kutzelnigg, J. Rychlewski, JCP 108, 2837 ('98)
@@ -54,9 +64,15 @@
       write(*,1002) LegendreFile
       write(*,*) LegPoints,' LegPoints'
       write(*,*) Shift,Order,Left,Right,Bottom,Top
-      m2=m1
-      m3=m1
-      m4=m1
+        
+     !   m2=m1
+     !   m3=m1
+     !   m4=m1        
+     ! else
+        m2=m1
+        m3=m1
+        m4=m1      
+     ! end if
       write(*,*) alpha,m1,m2,m3,m4
       Pi=dacos(-1.d0)
       write(*,*) 'Pi=',Pi
@@ -78,7 +94,7 @@
 !      enddo
 
       !u1 = 0.1d0*dexp(Rleft)
-      mu = (m1*m2*m3*m4/(m1 + m2 + m3 + m4))**(1.0d0/3.0d0);
+      mu = (m1*m2*m3*m4/(m1 + m2 + m3 + m4))**(1.0d0/3.0d0)
       mu12=m1*m2/(m1+m2)
       mu34=m3*m4/(m3+m4)
       mu1234=(m1+m2)*(m3+m4)/(m1+m2+m3+m4)
@@ -127,6 +143,7 @@
       allocate(workd(3*MatrixDim))
       allocate(lPsi(MatrixDim,ncv),rPsi(MatrixDim,ncv),mPsi(MatrixDim,ncv))
       allocate(Residuals(MatrixDim))
+      allocate(Energies(ncv,2))
       info=0
 !      r0=11.56d0
       call GridMaker(m,mu, R(1),11.65d0,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints,yPoints)
@@ -142,7 +159,7 @@
       
       call CalcOverlap(Order,xPoints,yPoints,LegPoints,xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,xBounds,yBounds,HalfBandWidth,S)
       do i=1,sDim
-                write(200,*) (S(i,j),j=1,psiDIm)
+                !write(200,*) (S(i,j),j=1,psiDIm)
       end do
 !      do i = 1,HalfBandWidth+1
 !               write(60,20) (S(i,j), j = 1,xDim*yDim)               
@@ -170,7 +187,7 @@
 
             RLeft = R(iR)-RDerivDelt
             print*, "after..."
-            call CalcHamiltonian(alpha,RLeft,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H)
+            call CalcHamiltonian(alpha,RLeft,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H,run)
             call MyDsband(Select,Energies,lPsi,MatrixDim,Shift,MatrixDim,H,S,HalfBandWidth+1,LUFac,LeadDim,HalfBandWidth,NumStates,Tol,Residuals,ncv,lPsi,MatrixDim,iparam,workd,workl,ncv*ncv+8*ncv,iwork,info)
             if (info.ne.0) write(6,*) 'Error in MyDsband.  info = ',info
             if (iR .gt. 1) then 
@@ -186,12 +203,15 @@
             !write(100,10) RLeft,(Energies(i,1), i = 1,NumStates)
             write(6,*)
             write(6,*) RLeft
+            do i = 1,10
+               write(6,*) i,Energies(i,1),Energies(i,2)
+            enddo
             do i = 1,min(NumStates,iparam(5))
                write(6,*) i,Energies(i,1),Energies(i,2)
             enddo
             
             RRight = R(iR)+RDerivDelt
-            call CalcHamiltonian(alpha,RRight,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H)
+            call CalcHamiltonian(alpha,RRight,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H,run)
             call MyDsband(Select,Energies,rPsi,MatrixDim,Shift,MatrixDim,H,S,HalfBandWidth+1,LUFac,LeadDim,HalfBandWidth,NumStates,Tol,Residuals,ncv,rPsi,MatrixDim,iparam,workd,workl,ncv*ncv+8*ncv,iwork,info)
             if (info.ne.0) write(6,*) 'Error in MyDsband.  info = ',info
             call FixPhase(NumStates,HalfBandWidth,MatrixDim,S,ncv,lPsi,rPsi)
@@ -204,26 +224,35 @@
             !write(100,10) RRight,(Energies(i,1), i = 1,NumStates)
             write(6,*)
             write(6,*) RRight
+            do i = 1,10
+               write(6,*) i,Energies(i,1),Energies(i,2)
+            enddo
             do i = 1,min(NumStates,iparam(5))
                write(6,*) i,Energies(i,1),Energies(i,2)
             enddo
 
          endif
          
-         call CalcHamiltonian(alpha,R(iR),mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H)
+         call CalcHamiltonian(alpha,R(iR),mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H,run)
          call MyDsband(Select,Energies,mPsi,MatrixDim,Shift,MatrixDim,H,S,HalfBandWidth+1,LUFac,LeadDim,HalfBandWidth,NumStates,Tol,Residuals,ncv,mPsi,MatrixDim,iparam,workd,workl,ncv*ncv+8*ncv,iwork,info)
          if (info.ne.0) write(6,*) 'Error in MyDsband.  info = ',info
          
-         if (CouplingFlag .ne. 0) then 
+         !if (CouplingFlag .ne. 0) then
+            write(*,*) "Befor fixpfase", MatrixDim 
             call FixPhase(NumStates,HalfBandWidth,MatrixDim,S,ncv,rPsi,mPsi)
-            write(6,*) 'Finished with FixPhase at RRight.'
-         endif
+            write(6,*) 'Finished with FixPhase at RMid.'
+         !endif
+         if (iR .ne. 1) then
+            call FixPhase(NumStates,HalfBandWidth,MatrixDim,S,ncv,Psi(iR-1,:,:),mPsi)
+         endif         
 
-         !call CalcEigenErrors(info,iparam,MatrixDim,H,HalfBandWidth+1,S,HalfBandWidth,NumStates,mPsi,Energies,ncv)
-!         IF(R(iR).GT. 2.2d0) Shift = 0.93d0*Energies(1,1)
-        do i=1,numstates
-                energies(i,2)=0
-        end do
+         if(iparam(5).lt.numStates) write(*,*) "LESS THAN NUMSTATES"
+
+         call CalcEigenErrors(info,iparam,MatrixDim,H,HalfBandWidth+1,S,HalfBandWidth,NumStates,mPsi,Energies,ncv)
+         IF(R(iR).GT. 2.2d0) Shift = 1.1d0*Energies(1,1)
+        !do i=1,numstates
+        !        energies(i,2)=0
+        !end do
          do i = 1,min(NumStates,iparam(5))
 
 !     Energies(i,1) = Energies(i,1) + 1.875d0/(mu*R(iR)*R(iR))
@@ -235,19 +264,19 @@
 !         do i = 1,min(NumStates,iparam(5))
 !            write(6,*) i,Energies(i,1),Energies(i,2)
 !         enddo
-         do i = 1,20
+         do i = 1,10
              write(*,*) i,Energies(i,1),Energies(i,2)
          enddo
-         do i = min(NumStates,iparam(5))-10,min(NumStates,iparam(5))
-             write(*,*) i,Energies(i,1),Energies(i,2)
-         enddo
+         !do i = min(NumStates,iparam(5))-10,min(NumStates,iparam(5))
+         !    write(*,*) i,Energies(i,1),Energies(i,2)
+         !enddo
 
 
 
-         !write(100,*) R(iR),(Energies(j,1),j=1,numStates)
-         write(200,*) (Energies(j,1),j=1,eDim)
+         write(100,*) R(iR),(Energies(j,1),j=1,numStates)
+         write(200,*) R(iR),(Energies(j,1),j=1,numStates)
          do i=1,psiDim
-                write(200,*) (mPsi(i,j),j=1,eDim)
+         !       write(200,*) (mPsi(i,j),j=1,eDim)
          end do
          do i=1,eDim
                 Uad(iR,i,1)=Energies(i,1)
@@ -272,8 +301,8 @@
 !          enddo
             
          if (CouplingFlag .ne. 0) then
-!           call CalcPMatrix(min(NumStates,iparam(5)),HalfBandWidth,MatrixDim,RDerivDelt,lPsi,mPsi,rPsi,S,P)
-!           call CalcQMatrix(min(NumStates,iparam(5)),HalfBandWidth,MatrixDim,RDerivDelt,lPsi,mPsi,rPsi,S,Q)
+           call CalcPMatrix(min(NumStates,iparam(5)),HalfBandWidth,MatrixDim,RDerivDelt,lPsi,mPsi,rPsi,S,P)
+           call CalcQMatrix(min(NumStates,iparam(5)),HalfBandWidth,MatrixDim,RDerivDelt,lPsi,mPsi,rPsi,S,Q)
 
 !            write(51,*) R(iR)
 !            write(52,*) R(iR)
@@ -285,16 +314,15 @@
 !            enddo
             call CalcCoupling(NumStates,HalfBandWidth,MatrixDim,RDerivDelt,lPsi,mPsi,rPsi,S,P,Q,dP)
             
-            write(101,*) R(iR)
-            write(102,*) R(iR)
-            write(103,*) R(iR)
+            write(101,*) R(iR), P(5,7)
+            write(102,*) R(iR), Q(5,7)
+            write(103,*) R(iR),dP(5,7)
 
-            do i = 1,min(NumStates,iparam(5))
-               write(101,20) (P(i,j), j = 1,min(NumStates,iparam(5)))
-               write(102,20) (Q(i,j), j = 1,min(NumStates,iparam(5)))
-               write(103,20) (dP(i,j), j = 1,min(NumStates,iparam(5)))
-               
-            enddo
+            !do i = 1,min(NumStates,iparam(5))
+            !   write(101,*) R(iR), (P(i,j), j = 1,min(NumStates,iparam(5)))
+            !   write(102,*) R(iR), (Q(i,j), j = 1,min(NumStates,iparam(5)))
+            !   write(103,*) R(iR),(dP(i,j), j = 1,min(NumStates,iparam(5)))
+            !enddo
          endif
          
          if (PsiFlag .ne. 0) then
@@ -311,8 +339,11 @@
          endif
 
       enddo
-        !close(100)
-        close(200)
+        close(100)
+        !close(200)
+        !close(101)
+        !close(102)
+        !close(103)
       deallocate(H)
       deallocate(iwork)
       deallocate(Select)
@@ -447,7 +478,7 @@
       return
       end
 
-      subroutine CalcHamiltonian(alpha,R,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H)
+      subroutine CalcHamiltonian(alpha,R,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H,run)
 
       integer Order,LegPoints,xDim,yDim,xNumPoints,yNumPoints,xBounds(*),yBounds(*),HalfBandWidth
       
@@ -460,7 +491,7 @@
       double precision v(LegPoints,yNumPoints,yDim),vy(LegPoints,yNumPoints,yDim),vyy(LegPoints,yNumPoints,yDim)
 
       integer ix,iy,ixp,iyp,kx,ky,lx,ly
-      integer i1,i1p
+      integer i1,i1p,run
       integer Row,NewRow,Col
       integer, allocatable :: kxMin(:,:),kxMax(:,:),kyMin(:,:),kyMax(:,:)
       double precision a,b,mr,Pi
@@ -664,7 +695,7 @@
 !     call  h3ppot(r12, r13, r23, potvalue)
                         
 
-                  call  sumpairwisepot(r12,r13,r14,r23,r24,r34,dscale,potvalue,rvec,vvec)
+                  call  sumpairwisepot(r12,r13,r14,r23,r24,r34,dscale,potvalue,rvec,vvec,run)
                   Pot(ly,lx,ky,kx) = alpha*potvalue
 
                   !write(6,*) potvalue
@@ -1019,18 +1050,19 @@
       integer NumStates,HalfBandWidth,MatrixDim,ncv
       double precision S(HalfBandWidth+1,MatrixDim),Psi(MatrixDim,ncv)
       double precision mPsi(MatrixDim,ncv),rPsi(MatrixDim,ncv)
-
       integer i,j
       double precision Phase,ddot
       double precision, allocatable :: TempPsi(:)
-!      write(6,*) 'in FixPhase: allocating memory for TempPsi'
+      write(*,*) "in FixPhase: allocating memory for TempPsi"
       allocate(TempPsi(MatrixDim))
+      write(*,*) 'fixedF'
 
       do i = 1,NumStates
-!         write(6,*) 'in FixPhase: i = ', i
-         !call dsbmv('U',MatrixDim,HalfBandWidth,1.0d0,S,HalfBandWidth+1,rPsi(1,i),1,0.0d0,TempPsi,1)
+         write(6,*) 'in FixPhase: i = ', i
+         call dsbmv('U',MatrixDim,HalfBandWidth,1.0d0,S,HalfBandWidth+1,rPsi(1,i),1,0.0d0,TempPsi,1)
          Phase = ddot(MatrixDim,mPsi(1,i),1,TempPsi,1)
          if (Phase .lt. 0.0d0) then
+            !print *, "needed to fix phase"
             do j = 1,MatrixDim
                rPsi(j,i) = -rPsi(j,i)
             enddo
