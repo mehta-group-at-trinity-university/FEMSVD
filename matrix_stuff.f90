@@ -433,4 +433,149 @@
 
  9000 continue
 
-      end
+    end subroutine MyDsband
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+subroutine Mydggev(N,H,LDH,L,LDL,eval,evec)
+  implicit none
+  integer LDH,N,LDL,info
+  double precision H(LDH,N),L(LDL,N),eval(N),evec(N,N)
+  double precision, allocatable :: alphar(:),alphai(:),beta(:),work(:),VL(:,:)
+  integer lwork,i,im,in,j
+
+  allocate(alphar(N),alphai(N),beta(N))
+
+
+  info = 0
+  lwork = -1
+  allocate(work(1))
+  call dggev('N','V',N,H,LDH,L,LDL,alphar,alphai,beta,VL,1,evec,N,work,lwork,info) ! 
+  do im = 1,N
+     alphar(im)=0.0d0
+     alphai(im)=0.0d0
+     beta(im)=0.0d0
+     eval(im)=0.0d0
+     do in = 1,N
+        evec(im,in)=0.0d0
+     enddo
+  enddo
+
+  lwork=work(1)
+  deallocate(work)
+  allocate(work(lwork))
+  call dggev('N','V',N,H,LDH,L,LDL,alphar,alphai,beta,VL,1,evec,N,work,lwork,info) ! 
+
+  do i = 1, N
+     if (abs(alphai(i)).ge.1e-12) then
+        print*, '#eigenvalue may be complex! alphai(',i,')=',alphai(i) ! 
+     endif
+     if(abs(beta(i)).ge.1e-12) then
+        eval(i) = -alphar(i)/beta(i)
+     endif
+  enddo
+
+  call deigsrt(eval,evec,N,N)
+
+  do i = 1,N
+     eval(i)=-eval(i)
+  enddo
+
+  deallocate(alphar,alphai,beta)
+  deallocate(work)
+
+end subroutine Mydggev
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+subroutine Mydgeev(N,H,LDH,eval,evec)
+  implicit none
+  integer LDH,N,info
+  double precision H(LDH,N),eval(N),evec(N,N)
+  double precision, allocatable :: alphar(:),alphai(:),work(:),VL(:,:)
+  integer lwork,i,im,in,j
+
+  allocate(alphar(N),alphai(N))
+
+  info = 0
+  lwork = -1
+  allocate(work(1))
+  write(6,*) "getting info"
+  call dgeev('N','V',N,H,LDH,alphar,alphai,VL,1,evec,N,work,lwork,info) ! 
+  write(6,*) "done getting info, info = ", info
+  alphar(:)=0d0
+  alphai(:)=0d0
+
+  eval(:)=0d0
+  evec(:,:)=0d0
+
+  lwork=work(1)
+  deallocate(work)
+  allocate(work(lwork))
+
+  write(6,*) "diagonalizing now"
+  call dgeev('N','V',N,H,LDH,alphar,alphai,VL,1,evec,N,work,lwork,info) ! 
+
+  write(6,*) "checking for complex eigenvalues"
+  do i = 1, N
+     if (abs(alphai(i)).ge.1e-12) then
+        print*, '#eigenvalue may be complex! alphai(',i,')=',alphai(i) ! 
+     endif
+     
+     eval(i) = -alphar(i)
+
+  enddo
+  
+  write(6,*) "sorting"
+  call deigsrt(eval,evec,N,N)
+
+  do i = 1,N
+     eval(i)=-eval(i)
+  enddo
+
+  deallocate(alphar,alphai)
+  deallocate(work)
+
+end subroutine Mydgeev
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+subroutine CompSqrMatInv(A, N)
+  implicit none
+  integer N,info,lwk
+  integer, allocatable :: ipiv(:)
+  double precision, allocatable :: work(:)
+  double complex A(N,N)
+  allocate(ipiv(N))
+  call zgetrf(N, N, A, N, ipiv, info)
+  allocate(work(1))
+  lwk = -1
+  call zgetri(N, A, N, ipiv, work, lwk, info)
+  lwk = work(1)
+  deallocate(work)
+  allocate(work(lwk))
+  call zgetri(N, A, N, ipiv, work, lwk, info)
+  deallocate(ipiv,work)
+end subroutine CompSqrMatInv
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+SUBROUTINE deigsrt(d,v,n,np)
+  INTEGER n,np
+  double precision d(np),v(np,np)
+  INTEGER i,j,k
+  double precision p
+  do i=1,n-1
+     k=i
+     p=d(i)
+     do j=i+1,n
+        if(d(j).ge.p)then
+           k=j
+           p=d(j)
+        endif
+     enddo
+     if(k.ne.i)then
+        d(k)=d(i)
+        d(i)=p
+        do j=1,n
+           p=v(j,i)
+           v(j,i)=v(j,k)
+           v(j,k)=p
+        enddo
+     endif
+  enddo
+  return
+END SUBROUTINE deigsrt

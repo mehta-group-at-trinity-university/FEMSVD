@@ -5,7 +5,7 @@ program SVD
        e,eMin,eMax,m1,m2,m3,m4,mu4,massarray(4)
   real*8, allocatable :: nodesR(:),weightsR(:),holder(:),Hsparse(:),&
        Bsparse(:),Pmu(:),Pnu(:),eigenVals(:),ress(:),&
-       alphaR(:),alphaI(:),work(:),EVecs(:,:),VL(:,:),beta(:)
+       EVals(:),EVecs(:,:),beta(:)
   real*8, allocatable :: dXr(:,:),TmatR(:,:),weightsDMR(:,:),S(:,:),eigenVecs(:,:),&
        iPsi(:,:),jPsi(:,:),H(:,:),B(:,:)
   real*8, allocatable :: Uad(:,:,:),Psi(:,:,:),O(:,:)
@@ -13,8 +13,7 @@ program SVD
   integer i,j,k,ifilenodes,ix,sR,sRc,row,mu,nu,inu,jmu,rCountA,numN0A,rCountB,numN0B,probSize, &
        xDim,yDim,ncv,matrixdim,HalfBandWidth,set,&
        NumStates,PsiFlag,CouplingFlag,LegPoints,order,Left,Right,Bottom,Top,xNumPoints,yNumPoints,&
-       fparam(64),info,loop,m0,mm,&
-       Tstart,Tend,rate
+       fparam(64),info,loop,Tstart,Tend,rate
   integer, allocatable :: Hrow(:),Hcol(:),Brow(:),Bcol(:),indexOf(:,:)
   character*64 LegendreFile
   character*64 Outputfile
@@ -77,7 +76,6 @@ program SVD
      TmatR = (0.5d0/mu4)*MATMUL(dXr,MATMUL(weightsDMR,TRANSPOSE(dXr)))
 
      !obtain the adiabatic eigenvalues and eigenvectors 
-     NumStates = 5
      LegendreFile='Legendre.dat'
      LegPoints=10
 
@@ -92,17 +90,8 @@ program SVD
      if(set==1) Top=0 !odd parity
      if(set==2) Top=1 !even parity
      alpha=1d0
-     m=1d0
-     if(set==1)xNumPoints = 80
-     if(set==2)xNumPoints = 100
-     if(set==2)xNumPoints = 90
-     !xNumPoints=80
      xMin=0d0
      xMax=1.570796326794897
-     if(set==1)yNumPoints = 80
-     if(set==2)yNumPoints = 100
-     if(set==3)yNumPoints = 90
-     !yNumPoints=80
      yMin=0d0
      yMax =1.570796326794897
      RDerivDelt=0.0001d0
@@ -159,8 +148,7 @@ program SVD
         end do
      end do
 
-     allocate(H(probsize,probsize),alphaR(probsize),alphaI(probsize), &
-          beta(probsize),VL(probsize,probsize),EVecs(probsize,probsize),work(8*probsize))
+     allocate(H(probsize,probsize),EVals(probsize),EVecs(probsize,probsize))
      H=0d0
 
      write(6,*) "Constructing the Full Hamiltonian..."
@@ -213,18 +201,16 @@ program SVD
 !!$     print *, k
 !!$!!!!!
 
-     m0=100
      write(6,*) "About to diagonalize the Hamiltonian..."
+     call Mydgeev(probsize,H,probsize,EVals,EVecs)
      
-     call dgeev('N','V',probsize,H,probsize,alphaR,alphaI,VL,probsize,EVecs,probsize,work,8*probsize,INFO)
      call system_clock(Tend,rate)
-     print *,info
-     print *,(Tend-Tstart)/rate
-     !write(101,*) (Tend-Tstart)/rate, mm, eMin, eMax
-     write(1,*) (Tend-Tstart)/rate, numstates, Uad(sRc,1,1)
+     print*,info
+     print*,(Tend-Tstart)/rate
+     write(1,*) '#',(Tend-Tstart)/rate, numstates, Uad(sRc,1,1)
 
      do i=1,probsize
-        write(1,*) alphaR(i)
+        write(1,*) EVals(i)
         !write(301,*) (EVecs(i,j),j=1,probsize)
      end do
 
@@ -250,7 +236,7 @@ program SVD
 
 
      deallocate(nodesR,weightsR,dXr,holder,weightsDMR,TmatR,Uad,Psi,S,&
-          H,alphaR,alphaI,beta,VL,EVecs,work,indexOf,Pnu,Pmu,O,iPsi,jPsi)
+          H,EVals,EVecs,indexOf,Pnu,Pmu,O,iPsi,jPsi)
 
   end do
 

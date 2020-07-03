@@ -272,11 +272,11 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
 
 
 
-     write(100,*) R(iR),(Energies(j,1),j=1,numStates)
-     write(200,*) R(iR),(Energies(j,1),j=1,numStates)
-     do i=1,psiDim
+     write(100,10) R(iR),(Energies(j,1),j=1,numStates)
+!     write(200,10) R(iR),(Energies(j,1),j=1,numStates)
+!     do i=1,psiDim
         !       write(200,*) (mPsi(i,j),j=1,eDim)
-     end do
+!     end do
      do i=1,eDim
         Uad(iR,i,1)=Energies(i,1)
         Uad(iR,i,2)=Energies(i,2)
