@@ -1,8 +1,8 @@
 xPoints (phi)		yPoints (theta)
-120			120
+80			80
 
 LobattoPoints		NumChannels
-64			40
+64			60
 
 PotentialDepth		Rmax
 40.d0			20.d0

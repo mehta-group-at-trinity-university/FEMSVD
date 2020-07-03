@@ -106,13 +106,15 @@ program SVD
      HalfBandWidth=yDim*Order+Order
      print *, "MatDIM: ", MatrixDim
      probSize=sRc*numStates
+     
+     PsiFlag=0
 
      print *, NUmStates
      print *, HalfBandWidth, MatrixDim
      allocate(Uad(sRc,numStates,2),Psi(sRc,MatrixDim,numStates),S(HalfBandWidth+1,MatrixDim),&
           indexOf(sRc,NumStates),Pnu(numStates),Pmu(numStates),O(probSize,probSize),&
           iPsi(MatrixDim,numStates),jPsi(MatrixDim,numStates))
-     call adiabaticSolver(NumStates,1,0,LegendreFile,LegPoints,Shift,Order,Left,Right,top,Bottom,alpha,massarray,&
+     call adiabaticSolver(NumStates,PsiFlag,0,LegendreFile,LegPoints,Shift,Order,Left,Right,top,Bottom,alpha,massarray,&
           xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,sRc,RDerivDelt,RFirst,RLast,V2Depth,&
           nodesR(2:sR-1),Uad,Psi,numstates,MatrixDim,S,HalfBandWidth+1,set)
 

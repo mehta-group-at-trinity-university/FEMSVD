@@ -174,7 +174,7 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
      !     >        xNumPoints,u,xBounds,HalfBandWidth,S)
 
      if (CouplingFlag .ne. 0) then
-
+        
         RLeft = R(iR)-RDerivDelt
         print*, "after..."
         call CalcHamiltonian(alpha,RLeft,mu,mu12,mu34,mu1234,massarray(1),massarray(2),massarray(3),massarray(4),&
@@ -226,7 +226,6 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
         do i = 1,min(NumStates,iparam(5))
            write(6,*) i,Energies(i,1),Energies(i,2)
         enddo
-
      endif
 
      call CalcHamiltonian(alpha,R(iR),mu,mu12,mu34,mu1234,&
@@ -238,7 +237,7 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
 
      !if (CouplingFlag .ne. 0) then
 
-     call FixPhase(NumStates,HalfBandWidth,MatrixDim,S,ncv,rPsi,mPsi)
+     !call FixPhase(NumStates,HalfBandWidth,MatrixDim,S,ncv,rPsi,mPsi)
 
      !endif
      if (iR .ne. 1) then
