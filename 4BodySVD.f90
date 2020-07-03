@@ -2,7 +2,7 @@ program SVD
   implicit none
   real*8 n,w,m,Rmax,res,temp,overlap,tempA,tempB,epsout, &
        Shift,alpha,r0diatom,etaOVERpi,xMin,xMax,yMin,yMax,RDerivDelt,RFirst,RLast,V2Depth,&
-       e,eMin,eMax,m1,m2,m3,m4,mu4
+       e,eMin,eMax,m1,m2,m3,m4,mu4,massarray(4)
   real*8, allocatable :: nodesR(:),weightsR(:),holder(:),Hsparse(:),&
        Bsparse(:),Pmu(:),Pnu(:),eigenVals(:),ress(:),&
        alphaR(:),alphaI(:),work(:),EVecs(:,:),VL(:,:),beta(:)
@@ -17,7 +17,7 @@ program SVD
        Tstart,Tend,rate
   integer, allocatable :: Hrow(:),Hcol(:),Brow(:),Bcol(:),indexOf(:,:)
   character*64 LegendreFile
-  character* 64 filename
+  character*64 Outputfile
   CHARACTER*64 LobattoFile
 
   read(5,*)
@@ -28,53 +28,33 @@ program SVD
   read(5,*)
   read(5,*)
   read(5,*) V2Depth, Rmax
+  read(5,*)
+  read(5,*)
+  read(5,*) m1,m2,m3,m4
   
-  !open(unit=101,file="eigenVals-Vecs-100x60x60x200.dat")
-  !open(unit=200,file="adiabaticPhi.dat")
-  !open(unit=201,file="adiabaticPhi-200x60x60x100x100-m12.dat")
-  !open(unit=300,file="eigenVals-200x60x60x100x100-m12.dat")
-  !open(unit=301,file="eigenVecs-200x60x60x100x100-m12.dat")
-  !open(unit=400,file="overlap100x400.dat")
-  !open(unit=401,file="overlap200x60x60x100x100-m12.dat")
+  mu4=(m1*m2*m3*m4/(m1+m2+m3+m4))**(1.0d0/3.0d0)  
+  massarray = (/m1,m2,m3,m4/)
 
   do set=1,1
-     !if (set==1) filename = "eigenValsCplxAbs-HHLLEven.dat"
+     !if (set==1) Outputfile = "eigenValsCplxAbs-HHLLEven.dat"
      ! naming convention = radial x xpoints x ypoints numchannels x depth
-     if (set==1) filename = "Eigenvals.dat"!"eigenVals-100x100x100x20x5-HHHHOdd.dat"
-     if (set==2) filename = "eigenVals-100x100x100x20x5-HHHHEven.dat"
-     if (set==3) filename = "eigenVals-100x90x90x200x50-m12Even.dat"
-     if (set==4) filename = "eigenVals-150x80x80x200x100-m12Even.dat"
-     if (set==5) filename = "eigenVals-200x80x80x200x250-m12.dat"
-     if (set==6) filename = "eigenVals-200x80x80x200x300-m12.dat"
-     open(unit=1,file=filename)
+     if (set==1) Outputfile = "Eigenvals.dat"!"eigenVals-100x100x100x20x5-HHHHOdd.dat"
+     if (set==2) Outputfile = "eigenVals-100x100x100x20x5-HHHHEven.dat"
+     if (set==3) Outputfile = "eigenVals-100x90x90x200x50-m12Even.dat"
+     if (set==4) Outputfile = "eigenVals-150x80x80x200x100-m12Even.dat"
+     if (set==5) Outputfile = "eigenVals-200x80x80x200x250-m12.dat"
+     if (set==6) Outputfile = "eigenVals-200x80x80x200x300-m12.dat"
+     open(unit=1,file=Outputfile)
 
      call system_clock(Tstart)
 
      sR=LobattoPoints
      sRc=sR-2
 
-     !if(set==1 .OR. set==3 ) then
-     !        m1=1d0
-     !        m2=m1
-     !        m3=m1
-     !        m4=m1
-     !else 
-     m1=1d0
-     m2=m1
-     m3=1.d0
-     m4=m3
-     !end if
-     mu4=(m1*m2*m3*m4/(m1+m2+m3+m4))**(1.0d0/3.0d0);
-
      allocate(nodesR(sR),weightsR(sR),dXr(sRc,sR),holder(sR),weightsDMR(sR,sR),TmatR(src,src))
 
-!!!!!!
-     !Create the Gauss Lobatto DVR functions X for the R coordinate and the Kmat matrix
-!!$     do i=1,sR
-!!$        read(ifilenodes,*) n,w
-!!$        nodesR(i)=n
-!!$        weightsR(i)=w
-!!$     end do
+     ! read in the Gauss-Lobatto nodes and weights.  Be sure LobattoPoints is equal to one of
+     ! the options in the input following file:
      LobattoFile = 'GaussLobatto.dat'
      call GetGaussLobattoFactors(LobattoFile,LobattoPoints,nodesR,weightsR)
      
@@ -95,21 +75,16 @@ program SVD
      end do
      TmatR=0d0
      TmatR = (0.5d0/mu4)*MATMUL(dXr,MATMUL(weightsDMR,TRANSPOSE(dXr)))
-!!!!!!
 
-!!!!!!
-     !obtain the adiabatic eigenvalues and eigenvectors from Kelly's code
-
+     !obtain the adiabatic eigenvalues and eigenvectors 
      NumStates = 5
      LegendreFile='Legendre.dat'
      LegPoints=10
 
-     if(set==1) Shift=-5*40
-     if(set==2) Shift=-5*5
-     if(set==3) Shift=-5*50
-     if(set==4) Shift=-5*100
-     if(set==5) Shift=-5*250
-     if(set==6) Shift=-5*300
+     ! Set the "shift" for the DSBAND solver to -5*depth
+     Shift = -5d0*V2Depth
+
+     ! Set the Boundary conditions
      order=5
      Left=0
      Right=0 
@@ -148,7 +123,7 @@ program SVD
      allocate(Uad(sRc,numStates,2),Psi(sRc,MatrixDim,numStates),S(HalfBandWidth+1,MatrixDim),&
           indexOf(sRc,NumStates),Pnu(numStates),Pmu(numStates),O(probSize,probSize),&
           iPsi(MatrixDim,numStates),jPsi(MatrixDim,numStates))
-     call adiabaticSolver(NumStates,1,0,LegendreFile,LegPoints,Shift,Order,Left,Right,top,Bottom,alpha,m,&
+     call adiabaticSolver(NumStates,1,0,LegendreFile,LegPoints,Shift,Order,Left,Right,top,Bottom,alpha,massarray,&
           xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,sRc,RDerivDelt,RFirst,RLast,V2Depth,&
           nodesR(2:sR-1),Uad,Psi,numstates,MatrixDim,S,HalfBandWidth+1,set)
 

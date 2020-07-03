@@ -1,12 +1,12 @@
-Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints,Shift,Order,Left,Right,Top,Bottom,alpha,m1,&
-     xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,RSteps,RDerivDelt,RFirst,RLast,dscale,&
+Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints,Shift,Order,Left,Right,Top,Bottom,alpha,massarray,&
+     xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,RSteps,RDerivDelt,RFirst,RLast,V2Depth,&
      R,Uad,Psi,eDim,psiDim,S,sDim,run)
   implicit none
 
   integer LegPoints,xNumPoints,yNumPoints,run
   integer NumStates,PsiFlag,Order,Left,Right,Bottom,Top
   integer RSteps,CouplingFlag,CalcNewBasisFunc
-  double precision alpha,m,Shift,dscale
+  double precision alpha,m,Shift,V2Depth
   double precision RLeft,RRight,RDerivDelt
   DOUBLE PRECISION RFirst,RLast,XFirst,XLast,StepX
   double precision xMin,xMax,yMin,yMax
@@ -25,7 +25,7 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
   double precision Tol
   double precision TotalMemory
   double precision xNUM,dNUM
-  double precision mu, mu12,mu34,mu1234,m1,m2,m3,m4,r0diatom, dDiatom, etaOVERpi, Pi
+  double precision mu, mu12,mu34,mu1234,massarray(4),r0diatom, dDiatom, etaOVERpi, Pi
   double precision u1,v1,sys_ss_pot
   double precision, allocatable :: LUFac(:,:),workl(:)
   double precision, allocatable :: workd(:),Residuals(:)
@@ -60,21 +60,14 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
   write(*,*) LegPoints,' LegPoints'
   write(*,*) Shift,Order,Left,Right,Bottom,Top
 
-  !   m2=m1
-  !   m3=m1
-  !   m4=m1        
-  ! else
-  m2=m1
-  m3=m1
-  m4=m1      
   ! end if
-  write(*,*) alpha,m1,m2,m3,m4
+  write(*,*) alpha,massarray(1),massarray(2),massarray(3),massarray(4)
   Pi=dacos(-1.d0)
   write(*,*) 'Pi=',Pi
   write(*,*) xNumPoints,xMin,xMax
   write(*,*) yNumPoints,yMin,yMax
   write(*,*) RSteps,RDerivDelt,RFirst,RLast
-  write(*,*) dscale
+  write(*,*) V2Depth
 
   XFirst = RFirst
   XLast = RLast
@@ -89,13 +82,14 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
   !      enddo
 
   !u1 = 0.1d0*dexp(Rleft)
-  mu = (m1*m2*m3*m4/(m1 + m2 + m3 + m4))**(1.0d0/3.0d0)
-  mu12=m1*m2/(m1+m2)
-  mu34=m3*m4/(m3+m4)
-  mu1234=(m1+m2)*(m3+m4)/(m1+m2+m3+m4)
-  !     mu=0.5
-  !      mu=1.d0
-  !     mu=2.d0*mu12
+  mu = (massarray(1)*massarray(2)*massarray(3)*massarray(4))
+  mu = mu/(massarray(1)+massarray(2)+massarray(3)+massarray(4))
+  mu = mu**1.d0/3.d0
+!  mu = (m1*m2*m3*m4/(m1 + m2 + m3 + m4))**(1.0d0/3.0d0)
+  mu12=massarray(1)*massarray(2)/(massarray(1)+massarray(2))
+  mu34=massarray(3)*massarray(4)/(massarray(3)+massarray(4))
+  mu1234=(massarray(1)+massarray(2))*(massarray(3)+massarray(4))/(massarray(1)+massarray(2)+massarray(3)+massarray(4))
+
   allocate(xLeg(LegPoints),wLeg(LegPoints))
   call GetGaussFactors(LegendreFile,LegPoints,xLeg,wLeg)
 
@@ -141,10 +135,10 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
   allocate(Energies(ncv,2))
   info=0
   !      r0=11.56d0
-  call GridMaker(m,mu, R(1),11.65d0,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints,yPoints)
-  !      GridMaker(m,mu,R,r0,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints,yPoints)
+  call GridMaker(R(1),11.65d0,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints,yPoints)
+  !      GridMaker(R,r0,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints,yPoints)
 
-  !      GridMakerBetter(m,mu,R,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints,yPoints)
+  !      GridMakerBetter(R,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints,yPoints)
   print*, "after gridmaker..."
   call CalcBasisFuncs(Left,Right,Order,xPoints,LegPoints,xLeg,xDim,xBounds,xNumPoints,0,u)
   call CalcBasisFuncs(Left,Right,Order,xPoints,LegPoints,xLeg,xDim,xBounds,xNumPoints,2,uxx)
@@ -183,8 +177,9 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
 
         RLeft = R(iR)-RDerivDelt
         print*, "after..."
-        call CalcHamiltonian(alpha,RLeft,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,&
-             xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H,run)
+        call CalcHamiltonian(alpha,RLeft,mu,mu12,mu34,mu1234,massarray(1),massarray(2),massarray(3),massarray(4),&
+             Order,xPoints,yPoints,LegPoints,&
+             xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,V2Depth,H,run)
         call MyDsband(Select,Energies,lPsi,MatrixDim,Shift,MatrixDim,H,S,HalfBandWidth+1,LUFac,LeadDim,&
              HalfBandWidth,NumStates,Tol,Residuals,ncv,lPsi,MatrixDim,iparam,workd,workl,ncv*ncv+8*ncv,iwork,info)
         if (info.ne.0) write(6,*) 'Error in MyDsband.  info = ',info
@@ -209,8 +204,9 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
         enddo
 
         RRight = R(iR)+RDerivDelt
-        call CalcHamiltonian(alpha,RRight,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,&
-             xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H,run)
+        call CalcHamiltonian(alpha,RRight,mu,mu12,mu34,mu1234,&
+             massarray(1),massarray(2),massarray(3),massarray(4),Order,xPoints,yPoints,LegPoints,&
+             xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,V2Depth,H,run)
         call MyDsband(Select,Energies,rPsi,MatrixDim,Shift,MatrixDim,H,S,HalfBandWidth+1,LUFac,LeadDim,&
              HalfBandWidth,NumStates,Tol,Residuals,ncv,rPsi,MatrixDim,iparam,workd,workl,ncv*ncv+8*ncv,iwork,info)
         if (info.ne.0) write(6,*) 'Error in MyDsband.  info = ',info
@@ -233,8 +229,9 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
 
      endif
 
-     call CalcHamiltonian(alpha,R(iR),mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,xLeg,&
-          wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H,run)
+     call CalcHamiltonian(alpha,R(iR),mu,mu12,mu34,mu1234,&
+          massarray(1),massarray(2),massarray(3),massarray(4),Order,xPoints,yPoints,LegPoints,xLeg,&
+          wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,V2Depth,H,run)
      call MyDsband(Select,Energies,mPsi,MatrixDim,Shift,MatrixDim,H,S,HalfBandWidth+1,LUFac,LeadDim,&
           HalfBandWidth,NumStates,Tol,Residuals,ncv,mPsi,MatrixDim,iparam,workd,workl,ncv*ncv+8*ncv,iwork,info)
      if (info.ne.0) write(6,*) 'Error in MyDsband.  info = ',info
@@ -482,11 +479,11 @@ subroutine CalcOverlap(Order,xPoints,yPoints,LegPoints,xLeg,wLeg,xDim,yDim,xNumP
 end subroutine CalcOverlap
 
 subroutine CalcHamiltonian(alpha,R,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,&
-     xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,dscale,H,run)
+     xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,V2Depth,H,run)
   implicit none
   integer Order,LegPoints,xDim,yDim,xNumPoints,yNumPoints,xBounds(*),yBounds(*),HalfBandWidth
 
-  double precision dscale
+  double precision V2Depth
   character(len=74) :: PotFile
   double precision alpha,R,mu,mu12,mu34,mu1234,m1,m2,m3,m4
   double precision xPoints(*),yPoints(*),xLeg(*),wLeg(*)
@@ -671,7 +668,7 @@ subroutine CalcHamiltonian(alpha,R,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints
 !!$              r23 = rp1-rp2*m1-rp3*m4
 !!$              r24 = rp1-rp2*m1+rp3*m3
 
-              !NPM Version for different masses
+              !NPM Version for different masses in H-type mass-scaled Jacobi coordinates
               y1=R*cosx(lx,kx)*siny(ly,ky)
               y2=R*sinx(lx,kx)*siny(ly,ky)
               y3=R*cosy(ly,ky)
@@ -685,7 +682,7 @@ subroutine CalcHamiltonian(alpha,R,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints
               r23=abs(x2-x3)
               r24=abs(x2-x4)
               r34=abs(x3-x4)
-              !write(6,*) dscale
+              !write(6,*) V2Depth
               !     c          u1 = sys_ss_pot(r12,v12,2,.FALSE.)
               !ccc  v12 = dexp(-r12**2/200.d0)
               !ccc  v12 = -dDiatom/(dcosh(r12/r0diatom))**2
@@ -703,7 +700,7 @@ subroutine CalcHamiltonian(alpha,R,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints
               !     call  h3ppot(r12, r13, r23, potvalue)
 
 
-              call  sumpairwisepot(r12,r13,r14,r23,r24,r34,dscale,potvalue,rvec,vvec,run)
+              call  sumpairwisepot(r12,r13,r14,r23,r24,r34,V2Depth,potvalue,rvec,vvec,run)
               Pot(ly,lx,ky,kx) = alpha*potvalue
 
               !write(6,*) potvalue
@@ -1237,10 +1234,10 @@ subroutine GridMaker111(m,mu,R,r0,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoi
 end subroutine GridMaker111
 
 
-subroutine GridMaker(m,mu,R,r0,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints,yPoints)
+subroutine GridMaker(R,r0,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints,yPoints)
   implicit none
   integer xNumPoints,yNumPoints
-  double precision m,mu,R,r0,xMin,xMax,yMin,yMax,xPoints(xNumPoints),yPoints(yNumPoints)
+  double precision R,r0,xMin,xMax,yMin,yMax,xPoints(xNumPoints),yPoints(yNumPoints)
 
   integer i,j,k
   double precision Pi
@@ -1329,10 +1326,10 @@ subroutine GridMaker(m,mu,R,r0,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints
   return
 end subroutine GridMaker
 
-subroutine GridMakerBetter(m,mu,R,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints,yPoints)
+subroutine GridMakerBetter(R,xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,xPoints,yPoints)
 
   integer xNumPoints,yNumPoints
-  double precision m,mu,R,r0,xMin,xMax,yMin,yMax,xPoints(xNumPoints),yPoints(yNumPoints)
+  double precision R,r0,xMin,xMax,yMin,yMax,xPoints(xNumPoints),yPoints(yNumPoints)
 
   integer i,j,OPGRID
   double precision Pi
