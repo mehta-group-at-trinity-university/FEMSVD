@@ -1,0 +1,8 @@
+xPoints (phi)		yPoints (theta)
+40			40
+
+LobattoPoints		NumChannels
+40			20
+
+PotentialDepth		Rmax
+10.d0			20.d0

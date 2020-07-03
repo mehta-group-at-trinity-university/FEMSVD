@@ -333,107 +333,108 @@
    99                                   return
       end
       subroutine interv ( xt, lxt, x, left, mflag )
-!  from  * a practical guide to splines *  by C. de Boor    
-!omputes  left = max( i :  xt(i) .lt. xt(lxt) .and.  xt(i) .le. x )  .
-!
-!******  i n p u t  ******
-!  xt.....a double precision sequence, of length  lxt , assumed to be nondecreasing
-!  lxt.....number of terms in the sequence  xt .
-!  x.....the point whose location with respect to the sequence  xt  is
-!        to be determined.
-!
-!******  o u t p u t  ******
-!  left, mflag.....both integers, whose value is
-!
-!   1     -1      if               x .lt.  xt(1)
-!   i      0      if   xt(i)  .le. x .lt. xt(i+1)
-!   i      0      if   xt(i)  .lt. x .eq. xt(i+1) .eq. xt(lxt)
-!   i      1      if   xt(i)  .lt.        xt(i+1) .eq. xt(lxt) .lt. x
-!
-!        In particular,  mflag = 0  is the 'usual' case.  mflag .ne. 0
-!        indicates that  x  lies outside the CLOSED interval
-!        xt(1) .le. y .le. xt(lxt) . The asymmetric treatment of the
-!        intervals is due to the decision to make all pp functions cont-
-!        inuous from the right, but, by returning  mflag = 0  even if
-!        x = xt(lxt), there is the option of having the computed pp function
-!        continuous from the left at  xt(lxt) .
-!
-!******  m e t h o d  ******
-!  The program is designed to be efficient in the common situation that
-!  it is called repeatedly, with  x  taken from an increasing or decrea-
-!  sing sequence. This will happen, e.g., when a pp function is to be
-!  graphed. The first guess for  left  is therefore taken to be the val-
-!  ue returned at the previous call and stored in the  l o c a l  varia-
-!  ble  ilo . A first check ascertains that  ilo .lt. lxt (this is nec-
-!  essary since the present call may have nothing to do with the previ-
-!  ous call). Then, if  xt(ilo) .le. x .lt. xt(ilo+1), we set  left =
-!  ilo  and are done after just three comparisons.
-!     Otherwise, we repeatedly double the difference  istep = ihi - ilo
-!  while also moving  ilo  and  ihi  in the direction of  x , until
-!                      xt(ilo) .le. x .lt. xt(ihi) ,
-!  after which we use bisection to get, in addition, ilo+1 = ihi .
-!  left = ilo  is then returned.
-!
-      integer left,lxt,mflag,   ihi,ilo,istep,middle
-      double precision x,xt(lxt)
-      data ilo /1/
-      save ilo  
-      ihi = ilo + 1
-      if (ihi .lt. lxt)                 go to 20
-         if (x .ge. xt(lxt))            go to 110
-         if (lxt .le. 1)                go to 90
-         ilo = lxt - 1
-         ihi = lxt
-!
-   20 if (x .ge. xt(ihi))               go to 40
-      if (x .ge. xt(ilo))               go to 100
-!
-!              **** now x .lt. xt(ilo) . decrease  ilo  to capture  x .
-      istep = 1
-   31    ihi = ilo
-         ilo = ihi - istep
-         if (ilo .le. 1)                go to 35
-         if (x .ge. xt(ilo))            go to 50
-         istep = istep*2
-                                        go to 31
-   35 ilo = 1
-      if (x .lt. xt(1))                 go to 90
-                                        go to 50
-!              **** now x .ge. xt(ihi) . increase  ihi  to capture  x .
-   40 istep = 1
-   41    ilo = ihi
-         ihi = ilo + istep
-         if (ihi .ge. lxt)              go to 45
-         if (x .lt. xt(ihi))            go to 50
-         istep = istep*2
-                                        go to 41
-   45 if (x .ge. xt(lxt))               go to 110
-      ihi = lxt
-!
-!           **** now xt(ilo) .le. x .lt. xt(ihi) . narrow the interval.
-   50 middle = (ilo + ihi)/2
-      if (middle .eq. ilo)              go to 100
-!     note. it is assumed that middle = ilo in case ihi = ilo+1 .
-      if (x .lt. xt(middle))            go to 53
-         ilo = middle
-                                        go to 50
-   53    ihi = middle
-                                        go to 50
-!**** set output and return.
-   90 mflag = -1
-      left = 1
-                                        return
-  100 mflag = 0
-      left = ilo
-                                        return
-  110 mflag = 1
-	  if (x .eq. xt(lxt)) mflag = 0
-      left = lxt
-  111 if (left .eq. 1)                  return
-	  left = left - 1
-	  if (xt(left) .lt. xt(lxt))        return
-										go to 111
-      end
+        !  from  * a practical guide to splines *  by C. de Boor    
+        !omputes  left = max( i :  xt(i) .lt. xt(lxt) .and.  xt(i) .le. x )  .
+        !
+        !******  i n p u t  ******
+        !  xt.....a double precision sequence, of length  lxt , assumed to be nondecreasing
+        !  lxt.....number of terms in the sequence  xt .
+        !  x.....the point whose location with respect to the sequence  xt  is
+        !        to be determined.
+        !
+        !******  o u t p u t  ******
+        !  left, mflag.....both integers, whose value is
+        !
+        !   1     -1      if               x .lt.  xt(1)
+        !   i      0      if   xt(i)  .le. x .lt. xt(i+1)
+        !   i      0      if   xt(i)  .lt. x .eq. xt(i+1) .eq. xt(lxt)
+        !   i      1      if   xt(i)  .lt.        xt(i+1) .eq. xt(lxt) .lt. x
+        !
+        !        In particular,  mflag = 0  is the 'usual' case.  mflag .ne. 0
+        !        indicates that  x  lies outside the CLOSED interval
+        !        xt(1) .le. y .le. xt(lxt) . The asymmetric treatment of the
+        !        intervals is due to the decision to make all pp functions cont-
+        !        inuous from the right, but, by returning  mflag = 0  even if
+        !        x = xt(lxt), there is the option of having the computed pp function
+        !        continuous from the left at  xt(lxt) .
+        !
+        !******  m e t h o d  ******
+        !  The program is designed to be efficient in the common situation that
+        !  it is called repeatedly, with  x  taken from an increasing or decrea-
+        !  sing sequence. This will happen, e.g., when a pp function is to be
+        !  graphed. The first guess for  left  is therefore taken to be the val-
+        !  ue returned at the previous call and stored in the  l o c a l  varia-
+        !  ble  ilo . A first check ascertains that  ilo .lt. lxt (this is nec-
+        !  essary since the present call may have nothing to do with the previ-
+        !  ous call). Then, if  xt(ilo) .le. x .lt. xt(ilo+1), we set  left =
+        !  ilo  and are done after just three comparisons.
+        !     Otherwise, we repeatedly double the difference  istep = ihi - ilo
+        !  while also moving  ilo  and  ihi  in the direction of  x , until
+        !                      xt(ilo) .le. x .lt. xt(ihi) ,
+        !  after which we use bisection to get, in addition, ilo+1 = ihi .
+        !  left = ilo  is then returned.
+        !
+        integer left,lxt,mflag,   ihi,ilo,istep,middle
+        double precision x,xt(lxt)
+        data ilo /1/
+        save ilo  
+        ihi = ilo + 1
+        if (ihi .lt. lxt)                 go to 20
+        if (x .ge. xt(lxt))            go to 110
+        if (lxt .le. 1)                go to 90
+        ilo = lxt - 1
+        ihi = lxt
+        !
+20      if (x .ge. xt(ihi))               go to 40
+        if (x .ge. xt(ilo))               go to 100
+        !
+        !              **** now x .lt. xt(ilo) . decrease  ilo  to capture  x .
+        istep = 1
+31      ihi = ilo
+        ilo = ihi - istep
+        if (ilo .le. 1)                go to 35
+        if (x .ge. xt(ilo))            go to 50
+        istep = istep*2
+        go to 31
+35      ilo = 1
+        if (x .lt. xt(1))                 go to 90
+        go to 50
+        !              **** now x .ge. xt(ihi) . increase  ihi  to capture  x .
+40      istep = 1
+41      ilo = ihi
+        ihi = ilo + istep
+        if (ihi .ge. lxt)              go to 45
+        if (x .lt. xt(ihi))            go to 50
+        istep = istep*2
+        go to 41
+45      if (x .ge. xt(lxt))               go to 110
+        ihi = lxt
+        !
+        !           **** now xt(ilo) .le. x .lt. xt(ihi) . narrow the interval.
+50      middle = (ilo + ihi)/2
+        if (middle .eq. ilo)              go to 100
+        !     note. it is assumed that middle = ilo in case ihi = ilo+1 .
+        if (x .lt. xt(middle))            go to 53
+        ilo = middle
+        go to 50
+53      ihi = middle
+        go to 50
+        !**** set output and return.
+90      mflag = -1
+        left = 1
+        return
+100     mflag = 0
+        left = ilo
+        return
+110     mflag = 1
+        if (x .eq. xt(lxt)) mflag = 0
+        left = lxt
+111     if (left .eq. 1)                  return
+        left = left - 1
+        if (xt(left) .lt. xt(lxt))        return
+        go to 111
+      end subroutine interv
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine GetGaussFactors(File,Points,x,w)
 
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -476,4 +477,46 @@
       close(unit=7)
 
       return
-      end
+    end subroutine GetGaussFactors
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    SUBROUTINE GetGaussLobattoFactors(File,Points,x,w)
+    !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+    !c
+    !c     This subroutine retrieves the points and weights for
+    !c      Gaussian Quadrature from a given file
+    !c
+    !c     Variables:
+    !c      File		name of file containing points and
+    !c			 weights
+    !c      Points		number of points to be used for
+    !c			quadrature
+    !c      x		array of nodes
+    !c      w		array of weights
+    !c
+    !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+    IMPLICIT NONE
+    INTEGER Points
+    DOUBLE PRECISION x(Points),w(Points)
+    CHARACTER*64 File
+    INTEGER i,tempPoints
+
+    OPEN(unit=7,file=File(1:INDEX(File,' ')-1))
+
+    DO i = 1,18
+       READ(7,*)
+    ENDDO
+    READ(7,*) tempPoints
+
+    DO WHILE (tempPoints .NE. Points)
+       DO i = 1,tempPoints
+          READ(7,*)
+       ENDDO
+       READ(7,*) tempPoints
+    ENDDO
+    DO i = 1,Points
+       READ(7,*) x(i),w(i)
+    ENDDO
+    CLOSE(unit=7)
+    RETURN
+  END SUBROUTINE GetGaussLobattoFactors
+
