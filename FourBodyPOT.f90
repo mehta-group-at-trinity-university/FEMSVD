@@ -1,6 +1,6 @@
 
       
-      subroutine sumpairwisepot(r12, r13, r14, r23, r24, r34, V2Depth, potvalue,rvec,vvec,run) 
+      subroutine sumpairwisepot(r12, r13, r14, r23, r24, r34, V2Depth, potvalue,rvec,vvec) 
       
 !     returns the value of the sum of pair-wise interactions 
       
