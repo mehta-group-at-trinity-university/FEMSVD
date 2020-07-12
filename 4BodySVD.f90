@@ -111,8 +111,8 @@ program SVD
   probSize=sRc*numStates
   PsiFlag=0
 
-  print *, NUmStates
-  print *, HalfBandWidth, MatrixDim
+  write(6,*) NUmStates
+  write(6,*) HalfBandWidth, MatrixDim
   allocate(Uad(sRc,numStates,2),Psi(sRc,MatrixDim,numStates),S(HalfBandWidth+1,MatrixDim),&
        indexOf(sRc,NumStates),O(probSize,probSize),&
        iPsi(MatrixDim,numStates),jPsi(MatrixDim,numStates))
@@ -120,7 +120,7 @@ program SVD
        xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,sRc,RDerivDelt,RFirst,RLast,V2Depth,&
        nodesR(2:sR-1),Uad,Psi,numstates,MatrixDim,S,HalfBandWidth+1)
 
-  print *,"About to calculate the overlap matrix..."
+  write(6,*)"About to calculate the overlap matrix..."
   ! create an array for the collective index
   row=1
   do i=1,sRc
@@ -133,7 +133,7 @@ program SVD
   O=0d0
 
   do i=1,sRc
-     print *,i
+     write(6,*) i
      do j=1,sRc
         iPsi(:,:) = Psi(i,:,:)
         jPsi(:,:) = Psi(j,:,:)
@@ -174,33 +174,33 @@ program SVD
 !!$              jmu=indexOf(i,mu)
 !!$              if(O(inu,jmu) .ne. O(inu,jmu) )  then
 !!$                 k=k+1
-!!$                 print *, O(inu,jmu)
+!!$                 write(6,*) O(inu,jmu)
 !!$              endif
 !!$           end do
 !!$        end do
 !!$     end do
-!!$     print *, "DIFFS"
+!!$     write(6,*) "DIFFS"
 !!$     do i=1,sRc
 !!$        do nu=1,numStates
 !!$           !do j=1,sRc
 !!$           !do mu=1,numStates
 !!$           inu=indexOf(i,nu)
 !!$           jmu=indexOf(i+1,nu)
-!!$           print *, O(inu,jmu)-O(jmu,inu)
+!!$           write(6,*) O(inu,jmu)-O(jmu,inu)
 !!$           !if (O(inu,jmu) .ne. O(jmu,inu)) k=k+1
 !!$           !end do
 !!$           !end do
 !!$        end do
 !!$     end do
-!!$     print *, k
+!!$     write(6,*) k
 !!$!!!!!
 
-  write(6,*) "About to diagonalize the Hamiltonian..."
+  write(6,*) "About to diagonalize the Hamiltonian. problem size = ", probsize
   call Mydsyev(H,probsize,EVals,EVecs)
 
   call system_clock(Tend,rate)
-  print*,info
-  print*,(Tend-Tstart)/rate
+  write(6,*) info
+  write(6,*) (Tend-Tstart)/rate
   write(1,*) '#',(Tend-Tstart)/rate, numstates, Uad(sRc,1,1)
 
   do i=1,probsize

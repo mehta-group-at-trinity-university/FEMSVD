@@ -1,5 +1,5 @@
 # Prerequisites
-*.d
+*.d>
 
 # Compiled Object files
 *.slo
@@ -27,10 +27,10 @@
 *.lib
 
 # Executables
-*.exe
 *.out
-*.app
+*.x
 
 #data files
 fort.*
-
+wfn*.dat
+*.output
