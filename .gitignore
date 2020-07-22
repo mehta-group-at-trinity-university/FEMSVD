@@ -34,3 +34,8 @@
 fort.*
 wfn*.dat
 *.output
+
+# archives
+*.tar
+*.tgz
+*.zip

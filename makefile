@@ -5,7 +5,7 @@ F132FORM = -ffixed-line-length-132
 LAPACK =   -framework accelerate
 ARPACK =  -L/usr/local/lib/ -larpack
 INCLUDE =  -I/usr/local/include
-WARN = -Wall
+WARN = #-Wall
 
 4BodySVD.x:	4BodySVD.f90 adiabaticSolver.f90 Bsplines.f90 FourBodyPOT.f90 matrix_stuff.o
 	${CMP} ${WARN} ${OPT} ${FREEFORM} matrix_stuff.o 4BodySVD.f90 adiabaticSolver.f90 Bsplines.f90 FourBodyPOT.f90  ${LAPACK} ${ARPACK} ${INCLUDE} 
