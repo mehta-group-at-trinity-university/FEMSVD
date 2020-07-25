@@ -558,20 +558,25 @@ subroutine test1D(Tmat,sr,weights,nodes)
   close(10)
 end subroutine test1D
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine CalcOMatrix(NumStates,HalfBandWidth,MatrixDim,iPsi,jPsi,S,O,sRc,i,j,indexOf,probSize)
+subroutine CalcOMatrix(NumStates,HalfBandWidth,MatrixDim,iPsi,jPsi,S,O,sRc,i,j,&
+     indexOf,probSize,rxindex)
+  use datastructures
   implicit none
   integer NumStates,HalfBandWidth,MatrixDIm,i,j,k,R,sRc,nu,mu
   integer indexOf(sRc,numStates),inu,jmu,probSize
   real*8 ddot
   double precision iPsi(MatrixDim,NumStates),jPsi(MatrixDim,numStates),S(HalfBandWidth+1,MatrixDim)
   double precision O(probSize,probSize),TempPsi(MatrixDim)
+  type(irix) rxindex(sRc + 2)
   
   do nu=1,numStates
      call dsbmv('U',MatrixDim,Halfbandwidth,1.0d0,S,Halfbandwidth+1,iPsi(:,nu),1,0.0d0,tempPsi,1)
      do mu=1,numStates
         inu=indexOf(i,nu)
         jmu=indexOf(j,mu)
-        O(inu,jmu) = ddot(MatrixDim,TempPsi,1,jPsi(1,mu),1)
+        if ( abs( rxindex(i)%ir - rxindex(j)%ir ) .le. 1) then
+           O(inu,jmu) = ddot(MatrixDim,TempPsi,1,jPsi(1,mu),1)
+        endif
         !               write(401,*) O(inu,jmu)
      end do
   end do
