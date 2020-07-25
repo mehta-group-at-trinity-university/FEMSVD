@@ -202,7 +202,7 @@ program SVD
   !  call testbasis(nodesR, weightsR, sr)
   call test1D(TmatR,sr,weightsR,nodesR)
   
-  stop  
+
   !obtain the adiabatic eigenvalues and eigenvectors 
   LegendreFile='Legendre.dat'
   LegPoints=10
@@ -312,7 +312,7 @@ program SVD
 
   call system_clock(Tend,rate)
   write(6,*) info
-  write(6,*) dble((Tend-Tstart)/rate)/60.d0, "minuits"
+  write(6,*) dble((Tend-Tstart)/rate)/60.d0, "minutes"
   write(1,*) '#',dble((Tend-Tstart)/rate)/60.d0, numstates, Uad(sRc,1,1)
 
   do i=1,probsize
@@ -354,7 +354,7 @@ program SVD
   !close(401)
 
 
-  deallocate(nodesR,weightsR,dXr,weightsDMR,TmatR,Uad,Psi,S,&
+  deallocate(nodesR,weightsR,weightsDMR,TmatR,Uad,Psi,S,&
        H,EVals,EVecs,indexOf,O,iPsi,jPsi)
 
 
