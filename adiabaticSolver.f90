@@ -34,7 +34,7 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
   double precision, allocatable :: vy(:,:,:),vyy(:,:,:)
   double precision, allocatable :: H(:,:),Vmid(:,:,:),Vexp(:,:,:)
   double precision, allocatable :: mPsi(:,:),lPsi(:,:),rPsi(:,:)
-  double precision :: Psi(RSteps,psiDim,eDim),Uad(RSteps,eDim,2),S(sDim,psiDim)
+  double precision :: Psi(psiDim,eDim,RSteps),Uad(RSteps,eDim,2),S(sDim,psiDim)
   double precision, allocatable ::P(:,:),Q(:,:),dP(:,:),Energies(:,:)
   double precision r0
   common/MassInfo/r0diatom,dDiatom
@@ -137,7 +137,7 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
      
      
      if (iR .ne. 1) then
-        call FixPhase(NumStates,HalfBandWidth,MatrixDim,S,ncv,Psi(iR-1,:,:),mPsi)
+        call FixPhase(NumStates,HalfBandWidth,MatrixDim,S,ncv,Psi(:,:,iR-1),mPsi)
      endif
      
      if(iparam(5).lt.numStates) write(*,*) "LESS THAN NUMSTATES"
@@ -161,7 +161,7 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
      end do
      do i=1,MatrixDim
         do j=1,eDim
-           Psi(iR,i,j)=mPsi(i,j)
+           Psi(i,j,iR)=mPsi(i,j)
         end do
      end do
 
@@ -548,7 +548,7 @@ subroutine CalcHamiltonian(alpha,R,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints
 
               call  sumpairwisepot(r12,r13,r14,r23,r24,r34,V2Depth,potvalue,rvec,vvec)
               Pot(ly,lx,ky,kx) = alpha*potvalue
-              !Pot(ly,lx,ky,kx) = alpha*(0.5d0*mu*(y1**2 + y2**2 + y3**2) + kxy*y1*y2 + kxz*y1*y3 + kyz*y2*y3)
+              Pot(ly,lx,ky,kx) = alpha*(0.5d0*mu*(y1**2 + y2**2 + y3**2) + kxy*y1*y2 + kxz*y1*y3 + kyz*y2*y3)
 
               !write(6,*) potvalue
               !     Pot(ly,lx,ky,kx) = 0.d0

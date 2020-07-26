@@ -165,13 +165,13 @@ program SVD
            do in = 1, LP-1
               if ( (in.gt.1) .and. (im.gt.1) ) then
                  AllT(im,in,iRS,jRS) = kdelta(iRS,jRS)*SectorT(im,in,iRS)*(wmn(im,iRS)*wmn(in,iRS))**(-0.5d0)
-              else if( (im.eq.1).and.(in.gt.1) ) then
+              else if( (im.eq.1).and.(iRS.gt.1).and.(in.gt.1) ) then
                  AllT(im,in,iRS,jRS) = (kdelta(iRS-1,jRS)*SectorT(LP,in,jRS) + kdelta(iRS,jRS)*SectorT(1,in,jRS)) &
                       *(wmn(in,jRS)*(wmn(LP,iRS-1)+wmn(1,jRS)))**(-0.5d0)
-              else if( (in.eq.1) .and. (im.gt.1) ) then
+              else if( (in.eq.1) .and. (jRS.gt.1) .and. (im.gt.1) ) then
                  AllT(im,in,iRS,jRS) = (kdelta(iRS,jRS-1)*SectorT(im,LP,iRS) + kdelta(iRS,jRS)*SectorT(im,1,iRS)) &
                       *(wmn(im,iRS)*(wmn(LP,jRS-1)+wmn(1,iRS)))**(-0.5d0)
-              else if ( (im.eq.1) .and. (in.eq.1)) then
+              else if ( (im.eq.1) .and. (in.eq.1) .and. (iRS.gt.1) .and. (jRS.gt.1)) then
                  AllT(im,in,iRS,jRS) = kdelta(iRS,jRS)*SectorT(LP,LP,iRS-1)
                  AllT(im,in,iRS,jRS) = AllT(im,in,iRS,jRS) + kdelta(iRS-1,jRS)*SectorT(LP,1,iRS-1)
                  AllT(im,in,iRS,jRS) = AllT(im,in,iRS,jRS) + kdelta(iRS,jRS-1)*SectorT(1,LP,iRS)
@@ -208,7 +208,7 @@ program SVD
   LegPoints=10
 
   ! Set the "shift" for the DSBAND solver to -5*depth
-  Shift = -5d0*V2Depth
+  Shift = 0.d0!-5d0*V2Depth
 
   RDerivDelt=0.0001d0
   RFirst=nodesR(2)
@@ -225,7 +225,7 @@ program SVD
 
   write(6,*) NUmStates
   write(6,*) HalfBandWidth, MatrixDim
-  allocate(Uad(sRc,numStates,2),Psi(sRc,MatrixDim,numStates),S(HalfBandWidth+1,MatrixDim),&
+  allocate(Uad(sRc,numStates,2),Psi(MatrixDim,numStates,sRc),S(HalfBandWidth+1,MatrixDim),&
        indexOf(sRc,NumStates),O(probSize,probSize),&
        iPsi(MatrixDim,numStates),jPsi(MatrixDim,numStates))
   call adiabaticSolver(NumStates,PsiFlag,0,LegendreFile,LegPoints,Shift,Order,Left,Right,top,Bottom,alpha,massarray,&
@@ -246,11 +246,11 @@ program SVD
 
   do i=1,sRc
      write(6,*) i
+     iPsi(:,:) = Psi(:,:,i)
      do j=1,sRc
-        iPsi(:,:) = Psi(i,:,:)
-        jPsi(:,:) = Psi(j,:,:)
+        jPsi(:,:) = Psi(:,:,j)
         call CalcOMatrix(Numstates,HalfBandWidth,MatrixDim,iPsi,jPsi,&
-             S,O,sRc,i,j,indexOf,probSize)
+             S,O,sRc,i,j,indexOf,probSize,rxindex)
      end do
   end do
 
@@ -309,9 +309,9 @@ program SVD
 
   write(6,*) "About to diagonalize the Hamiltonian. problem size = ", probsize
   call Mydsyev(H,probsize,EVals,EVecs)
-
+  write(6,*) "done diagonalization"
   call system_clock(Tend,rate)
-  write(6,*) info
+!  write(6,*) info
   write(6,*) dble((Tend-Tstart)/rate)/60.d0, "minutes"
   write(1,*) '#',dble((Tend-Tstart)/rate)/60.d0, numstates, Uad(sRc,1,1)
 
@@ -563,7 +563,7 @@ subroutine CalcOMatrix(NumStates,HalfBandWidth,MatrixDim,iPsi,jPsi,S,O,sRc,i,j,&
   use datastructures
   implicit none
   integer NumStates,HalfBandWidth,MatrixDIm,i,j,k,R,sRc,nu,mu
-  integer indexOf(sRc,numStates),inu,jmu,probSize
+  integer indexOf(sRc,numStates),inu,jmu,probSize,irs,jrs
   real*8 ddot
   double precision iPsi(MatrixDim,NumStates),jPsi(MatrixDim,numStates),S(HalfBandWidth+1,MatrixDim)
   double precision O(probSize,probSize),TempPsi(MatrixDim)
@@ -572,10 +572,15 @@ subroutine CalcOMatrix(NumStates,HalfBandWidth,MatrixDim,iPsi,jPsi,S,O,sRc,i,j,&
   do nu=1,numStates
      call dsbmv('U',MatrixDim,Halfbandwidth,1.0d0,S,Halfbandwidth+1,iPsi(:,nu),1,0.0d0,tempPsi,1)
      do mu=1,numStates
+        irs = rxindex(i)%ir
+        jrs = rxindex(j)%ir
         inu=indexOf(i,nu)
         jmu=indexOf(j,mu)
-        if ( abs( rxindex(i)%ir - rxindex(j)%ir ) .le. 1) then
+        if ( abs( irs - jrs  ) .le. 1) then
            O(inu,jmu) = ddot(MatrixDim,TempPsi,1,jPsi(1,mu),1)
+           !write(6,*) irs, jrs, i, j, nu, mu, O(inu,jmu)
+        else
+           O(inu,jmu) = 0d0
         endif
         !               write(401,*) O(inu,jmu)
      end do

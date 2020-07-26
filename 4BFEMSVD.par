@@ -1,8 +1,8 @@
 xPoints (phi)		yPoints (theta)
-40			80
+30			30
 
 NRSectors		LobattoPoints		NumChannels	Order
-20			6			80		7
+1			100			10		7
 
 PotentialDepth		Rmin		Rmax		alpha (turns V on and off)
 20.d0			0d0		10.d0		1.d0
