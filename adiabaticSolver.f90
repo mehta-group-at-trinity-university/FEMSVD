@@ -1,6 +1,6 @@
 Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints,Shift,Order,Left,Right,Top,Bottom,alpha,massarray,&
      xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,RSteps,RDerivDelt,RFirst,RLast,V2Depth,&
-     R,Uad,Psi,eDim,psiDim,S,sDim)
+     R,Uad,Psi,eDim,psiDim,S,sDim,r0)
   implicit none
 
   integer LegPoints,xNumPoints,yNumPoints
@@ -130,7 +130,7 @@ Subroutine adiabaticSolver(NumStates,PsiFlag,CouplingFlag,LegendreFile,LegPoints
      
      call CalcHamiltonian(alpha,R(iR),mu,mu12,mu34,mu1234,&
           massarray(1),massarray(2),massarray(3),massarray(4),Order,xPoints,yPoints,LegPoints,xLeg,&
-          wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,V2Depth,H)
+          wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,V2Depth,H,r0)
      call MyDsband(Select,Energies,mPsi,MatrixDim,Shift,MatrixDim,H,S,HalfBandWidth+1,LUFac,LeadDim,&
           HalfBandWidth,NumStates,Tol,Residuals,ncv,mPsi,MatrixDim,iparam,workd,workl,ncv*ncv+8*ncv,iwork,info)
      if (info.ne.0) write(6,*) 'Error in MyDsband.  info = ',info
@@ -321,7 +321,7 @@ subroutine CalcOverlap(Order,xPoints,yPoints,LegPoints,xLeg,wLeg,xDim,yDim,xNumP
 end subroutine CalcOverlap
 
 subroutine CalcHamiltonian(alpha,R,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints,yPoints,LegPoints,&
-     xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,V2Depth,H)
+     xLeg,wLeg,xDim,yDim,xNumPoints,yNumPoints,u,v,vy,uxx,vyy,xBounds,yBounds,HalfBandWidth,V2Depth,H,r0)
   implicit none
   integer Order,LegPoints,xDim,yDim,xNumPoints,yNumPoints,xBounds(*),yBounds(*),HalfBandWidth
 
@@ -546,9 +546,9 @@ subroutine CalcHamiltonian(alpha,R,mu,mu12,mu34,mu1234,m1,m2,m3,m4,Order,xPoints
               !     call  h3ppot(r12, r13, r23, potvalue)
 
 
-              call  sumpairwisepot(r12,r13,r14,r23,r24,r34,V2Depth,potvalue,rvec,vvec)
+              call  sumpairwisepot(r12,r13,r14,r23,r24,r34,V2Depth,potvalue,rvec,vvec,r0)
               Pot(ly,lx,ky,kx) = alpha*potvalue
-              Pot(ly,lx,ky,kx) = alpha*(0.5d0*mu*(y1**2 + y2**2 + y3**2) + kxy*y1*y2 + kxz*y1*y3 + kyz*y2*y3)
+              !Pot(ly,lx,ky,kx) = alpha*(0.5d0*mu*(y1**2 + y2**2 + y3**2) + kxy*y1*y2 + kxz*y1*y3 + kyz*y2*y3)
 
               !write(6,*) potvalue
               !     Pot(ly,lx,ky,kx) = 0.d0

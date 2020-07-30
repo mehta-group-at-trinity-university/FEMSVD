@@ -8,7 +8,7 @@ program SVD
   use datastructures
   implicit none
   real*8 n,w,m,Rmin,Rmax,res,temp,overlap,tempA,tempB,epsout,res1,res2
-  real*8 Shift,alpha,r0diatom,etaOVERpi,xMin,xMax,yMin,yMax,RDerivDelt,RFirst,RLast,V2Depth
+  real*8 Shift,alpha,r0,r0diatom,etaOVERpi,xMin,xMax,yMin,yMax,RDerivDelt,RFirst,RLast,V2Depth
   real*8 e,eMin,eMax,m1,m2,m3,m4,mu4,massarray(4)
   real*8, allocatable :: nodesR(:),weightsR(:),nds(:),wts(:),wmn(:,:),xmn(:,:)
   real*8, allocatable :: eigenVals(:),RSectors(:)
@@ -40,7 +40,7 @@ program SVD
   read(5,*) NRSectors, LP, NumStates, Order
   read(5,*)
   read(5,*)
-  read(5,*) V2Depth, Rmin, Rmax, alpha
+  read(5,*) V2Depth, Rmin, Rmax, alpha, r0
   read(5,*)
   read(5,*)
   read(5,*) m1,m2,m3,m4
@@ -208,7 +208,8 @@ program SVD
   LegPoints=10
 
   ! Set the "shift" for the DSBAND solver to -5*depth
-  Shift = 0.d0!-5d0*V2Depth
+  !Shift = 0.d0
+  Shift = -5d0*V2Depth
 
   RDerivDelt=0.0001d0
   RFirst=nodesR(2)
@@ -230,7 +231,7 @@ program SVD
        iPsi(MatrixDim,numStates),jPsi(MatrixDim,numStates))
   call adiabaticSolver(NumStates,PsiFlag,0,LegendreFile,LegPoints,Shift,Order,Left,Right,top,Bottom,alpha,massarray,&
        xNumPoints,xMin,xMax,yNumPoints,yMin,yMax,sRc,RDerivDelt,RFirst,RLast,V2Depth,&
-       nodesR(2:sR-1),Uad,Psi,numstates,MatrixDim,S,HalfBandWidth+1)
+       nodesR(2:sR-1),Uad,Psi,numstates,MatrixDim,S,HalfBandWidth+1,r0)
 
   write(6,*)"About to calculate the overlap matrix..."
   ! create an array for the collective index
@@ -316,7 +317,7 @@ program SVD
   write(1,*) '#',dble((Tend-Tstart)/rate)/60.d0, numstates, Uad(sRc,1,1)
 
   do i=1,probsize
-     write(1,*) EVals(i)
+     write(1,*) i, EVals(i)
      !write(301,*) (EVecs(i,j),j=1,probsize)
   end do
   wfnfile = "wfn"
